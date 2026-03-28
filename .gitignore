@@ -1,0 +1,29 @@
+# Python virtual environment — MOST IMPORTANT
+backend/venv/
+backend/.venv/
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# Environment files
+.env
+*.env.local
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Project uploads & models
+backend/uploads/
+backend/ml_models/
+backend/logs/
+
+# OS files
+.DS_Store
+Thumbs.db
