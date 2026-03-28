@@ -1,18 +1,23 @@
 from typing import List, Dict, Tuple
 import re
+import os
 
-# Try sentence-transformers (BERT based — better accuracy)
+# Environment se decide hoga — local pe BERT, production pe TF-IDF
+USE_BERT_ENV = os.getenv("USE_BERT", "true").lower() == "true"
+
 try:
-    from sentence_transformers import SentenceTransformer, util
-    _model = SentenceTransformer("all-MiniLM-L6-v2")
-    USE_BERT = True
-    print("ML: Using BERT sentence-transformers for matching")
+    if USE_BERT_ENV:
+        from sentence_transformers import SentenceTransformer, util
+        _model = SentenceTransformer("all-MiniLM-L6-v2")
+        USE_BERT = True
+        print("ML: Using BERT sentence-transformers for matching")
+    else:
+        raise Exception("BERT disabled via environment")
 except Exception:
     _model = None
     USE_BERT = False
     print("ML: Falling back to TF-IDF matching")
 
-# TF-IDF fallback
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
@@ -34,16 +39,10 @@ class JDMatcher:
         required_set = {self._normalize_skill(s) for s in required_skills}
         preferred_set = {self._normalize_skill(s) for s in preferred_skills}
 
-        # Strong — exact match in required
         strong = [s for s in resume_skills if self._normalize_skill(s) in required_set]
-
-        # Missing — required skills not in resume
         missing = [s for s in required_skills if self._normalize_skill(s) not in resume_set]
-
-        # Weak — preferred skills not fully matched
         weak = [s for s in preferred_skills if self._normalize_skill(s) not in resume_set]
 
-        # Score calculation
         if required_set:
             required_match = len(required_set - {self._normalize_skill(s) for s in missing}) / len(required_set)
         else:
@@ -54,7 +53,6 @@ class JDMatcher:
         else:
             preferred_match = 1.0
 
-        # Required skills = 70% weight, preferred = 30%
         skill_score = (required_match * 0.70 + preferred_match * 0.30) * 100
         return skill_score, strong, weak, missing
 
@@ -71,7 +69,6 @@ class JDMatcher:
             except Exception as e:
                 print(f"BERT error: {e}, falling back to TF-IDF")
 
-        # TF-IDF fallback
         try:
             vectorizer = TfidfVectorizer(max_features=500, stop_words="english")
             tfidf = vectorizer.fit_transform([resume_text[:2000], jd_text[:2000]])
@@ -89,15 +86,12 @@ class JDMatcher:
         jd_text: str,
     ) -> Dict:
 
-        # Skill-based score (60% weight)
         skill_score, strong, weak, missing = self._skill_overlap_score(
             resume_skills, required_skills, preferred_skills
         )
 
-        # Text similarity score (40% weight)
         text_score = self._text_similarity_score(resume_text, jd_text)
 
-        # Final weighted score
         final_score = round((skill_score * 0.60) + (text_score * 0.40), 1)
         final_score = max(0.0, min(100.0, final_score))
 
@@ -115,5 +109,4 @@ class JDMatcher:
         }
 
 
-# Global instance
 jd_matcher = JDMatcher()
