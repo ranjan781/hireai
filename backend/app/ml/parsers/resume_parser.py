@@ -1,4 +1,5 @@
 import re
+import os
 from pathlib import Path
 from typing import List, Dict, Any
 
@@ -14,50 +15,41 @@ try:
 except ImportError:
     Document = None
 
-import spacy
+# spaCy — sirf local pe load hoga
+USE_SPACY = os.getenv("USE_BERT", "true").lower() == "true"
+nlp = None
 
-# spaCy model load — ek baar load hoga memory mein
-try:
-    nlp = spacy.load("en_core_web_md")
-except OSError:
-    nlp = None
+if USE_SPACY:
+    try:
+        import spacy
+        nlp = spacy.load("en_core_web_md")
+        print("NLP: spaCy loaded successfully")
+    except Exception:
+        nlp = None
+        print("NLP: spaCy not available, using regex only")
+else:
+    print("NLP: spaCy disabled via environment")
 
-# ─── Skill Dictionary ───────────────────────────────────────────────
+# ─── Skill Dictionary ────────────────────────────────────────────────
 SKILLS_DB = {
-    # Programming Languages
     "python", "javascript", "typescript", "java", "c++", "c#", "go", "rust",
     "kotlin", "swift", "php", "ruby", "scala", "r", "matlab",
-
-    # Web Frameworks
     "fastapi", "django", "flask", "express", "react", "angular", "vue",
     "nextjs", "nestjs", "spring", "laravel", "rails",
-
-    # Databases
     "postgresql", "mysql", "mongodb", "redis", "elasticsearch", "cassandra",
     "sqlite", "oracle", "dynamodb", "firebase",
-
-    # Cloud & DevOps
     "aws", "gcp", "azure", "docker", "kubernetes", "terraform", "ansible",
     "jenkins", "github actions", "ci/cd", "linux",
-
-    # ML & Data Science
     "machine learning", "deep learning", "tensorflow", "pytorch", "keras",
     "scikit-learn", "pandas", "numpy", "opencv", "nlp", "computer vision",
     "data analysis", "data science", "tableau", "power bi",
-
-    # APIs & Architecture
     "rest api", "graphql", "microservices", "grpc", "websockets",
     "message queue", "kafka", "rabbitmq", "celery",
-
-    # Tools
     "git", "github", "gitlab", "jira", "postman", "figma", "linux",
     "bash", "powershell", "vim",
-
-    # Soft Skills (optional)
     "agile", "scrum", "team leadership", "problem solving",
 }
 
-# ─── Experience Patterns ────────────────────────────────────────────
 EXPERIENCE_PATTERNS = [
     r'(\d+)\+?\s*years?\s*of\s*(?:work\s*)?experience',
     r'(\d+)\+?\s*years?\s*(?:in|of)\s*(?:software|development|engineering)',
@@ -65,7 +57,6 @@ EXPERIENCE_PATTERNS = [
     r'(\d+)\+?\s*yrs?\s*(?:of\s*)?(?:exp|experience)',
 ]
 
-# ─── Main Parser Class ──────────────────────────────────────────────
 class ResumeParser:
 
     def extract_text(self, file_path: str) -> str:
@@ -84,21 +75,21 @@ class ResumeParser:
         text_lower = text.lower()
         found = set()
 
-        # Direct match from skills DB
         for skill in SKILLS_DB:
-            # Word boundary check
             pattern = r'\b' + re.escape(skill) + r'\b'
             if re.search(pattern, text_lower):
                 found.add(skill.title())
 
-        # spaCy NER se bhi kuch skills nikal sakte hain
+        # spaCy NER — sirf local pe chalega
         if nlp:
-            doc = nlp(text[:5000])  # first 5000 chars process karo
-            for ent in doc.ents:
-                if ent.label_ in ["ORG", "PRODUCT"] and len(ent.text) > 2:
-                    ent_lower = ent.text.lower()
-                    if ent_lower in SKILLS_DB:
-                        found.add(ent.text.title())
+            try:
+                doc = nlp(text[:5000])
+                for ent in doc.ents:
+                    if ent.label_ in ["ORG", "PRODUCT"] and len(ent.text) > 2:
+                        if ent.text.lower() in SKILLS_DB:
+                            found.add(ent.text.title())
+            except Exception:
+                pass
 
         return sorted(list(found))
 
@@ -115,37 +106,32 @@ class ResumeParser:
                     pass
 
         if years_found:
-            return max(years_found)  # highest mention return karo
+            return max(years_found)
 
-        # Fallback: work history dates se calculate karo
         year_pattern = r'\b(20\d{2})\b'
         years = re.findall(year_pattern, text)
         if len(years) >= 2:
             years_int = [int(y) for y in years]
             span = max(years_int) - min(years_int)
-            return float(min(span, 20))  # max 20 years cap
+            return float(min(span, 20))
 
         return 0.0
 
     def extract_contact(self, text: str) -> Dict[str, str]:
         contact = {}
 
-        # Email
         email_match = re.search(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', text)
         if email_match:
             contact["email"] = email_match.group()
 
-        # Phone
         phone_match = re.search(r'(?:\+91|0)?[6-9]\d{9}|\+?\d[\d\s\-]{8,12}\d', text)
         if phone_match:
             contact["phone"] = phone_match.group().strip()
 
-        # LinkedIn
         linkedin_match = re.search(r'linkedin\.com/in/[\w\-]+', text, re.IGNORECASE)
         if linkedin_match:
             contact["linkedin"] = linkedin_match.group()
 
-        # GitHub
         github_match = re.search(r'github\.com/[\w\-]+', text, re.IGNORECASE)
         if github_match:
             contact["github"] = github_match.group()
@@ -178,5 +164,4 @@ class ResumeParser:
         }
 
 
-# Global instance — ek baar banao, baar baar use karo
 resume_parser = ResumeParser()
