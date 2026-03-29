@@ -185,7 +185,7 @@ Auto-deploy on `git push origin main`
 
 ## Author
 
-**Rajesh** — Built from scratch as a production-level portfolio project
+**Ranjan Yadav** — Built from scratch as a production-level portfolio project
 
 - GitHub: https://github.com/ranjan781
 - Project: https://hireai-frontend-ek72.onrender.com
