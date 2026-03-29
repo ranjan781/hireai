@@ -30,7 +30,7 @@ app.add_middleware(BaseHTTPMiddleware, dispatch=rate_limit_middleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Temporary — sabko allow karo
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
