@@ -54,8 +54,9 @@ async def rate_limit_middleware(request: Request, call_next):
         if not allowed:
             return JSONResponse(
                 status_code=429,
-                content={"detail": "Upload limit reached. Please wait."}
-            )
+                content={"detail": "Too many requests. Please wait 1 minute."},
+                headers={"Access-Control-Allow-Origin": "https://hireai-frontend-ek72.onrender.com"}
+    )
 
     # General API limit
     allowed = await rate_limiter.is_allowed(

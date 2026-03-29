@@ -22,18 +22,19 @@ app = FastAPI(
     redoc_url="/api/redoc"
 )
 
-# CORS - sabse pehle add karo
+# Security middleware - pehle add karo
+app.add_middleware(BaseHTTPMiddleware, dispatch=security_headers_middleware)
+app.add_middleware(BaseHTTPMiddleware, dispatch=rate_limit_middleware)
+
+# CORS - sabse last mein add karo (execute sabse pehle hoga)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://hireai-frontend-ek72.onrender.com"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
-
-# Security middleware - baad mein
-app.add_middleware(BaseHTTPMiddleware, dispatch=rate_limit_middleware)
-app.add_middleware(BaseHTTPMiddleware, dispatch=security_headers_middleware)
 
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 app.include_router(router, prefix="/api/v1")
