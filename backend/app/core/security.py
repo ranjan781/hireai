@@ -4,13 +4,13 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from app.core.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password.encode("utf-8")[:72].decode("utf-8", errors="ignore"))
+    return pwd_context.hash(password[:72])
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain.encode("utf-8")[:72].decode("utf-8", errors="ignore"), hashed)
+    return pwd_context.verify(plain[:72], hashed)
 
 def create_access_token(data: dict, expires_delta=None) -> str:
     to_encode = data.copy()
