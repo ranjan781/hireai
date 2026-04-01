@@ -32,7 +32,7 @@ An AI-powered hiring platform that automatically matches resumes with job descri
 | Backend | FastAPI (Python 3.11) |
 | Database | PostgreSQL |
 | ORM | SQLAlchemy 2.0 |
-| Authentication | JWT + bcrypt |
+| Authentication | JWT + bcrypt |  
 | ML Engine | scikit-learn (TF-IDF) + BERT (local) |
 | Resume Parsing | pdfminer + python-docx |
 | AI Recommendations | Claude/OpenAI API |
